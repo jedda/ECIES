@@ -1,3 +1,3 @@
 module github.com/jedda/ecies
 
-go 1.21.3
+go 1.22.2
