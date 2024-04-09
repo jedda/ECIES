@@ -1,14 +1,14 @@
 # ECIES
 
-Package `ecies` implements the functions required to encrypt and decrypt data using the Elliptic Curve Integrated Encryption Scheme with X9.63 Key Derivation, and specifically; Apple's [implementation as part of Security.framework](https://developer.apple.com/documentation/security/1643957-seckeycreateencrypteddata) on iOS & macOS.
+This package and Go module implements the functions required to encrypt and decrypt data using the Elliptic Curve Integrated Encryption Scheme with X9.63 Key Derivation, and specifically; Apple's [implementation as part of Security.framework](https://developer.apple.com/documentation/security/1643957-seckeycreateencrypteddata) on iOS & macOS.
 
-It has been designed to be capable of exchanging encrypted data using key's [protected by the Secure Enclave on Apple platforms](https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/protecting_keys_with_the_secure_enclave) (with NIST P-256 elliptic curve keys) as well as other curves supported by ecdh.Curve (P-384, P-521, X25519).
+It was conceived to simplify the process of exchanging secure encrypted data cross-platform between a Go application and Apple devices. It has been designed to be capable of exchanging encrypted data using keys [protected by the Secure Enclave on Apple platforms](https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/protecting_keys_with_the_secure_enclave) (with NIST P-256 elliptic curve keys) as well as other curves supported by ecdh.Curve (P-384, P-521, X25519).
 
-This package includes an implementation of the X.963 KDF Key Derivation Function used by Apple's framework to derive shared AES keys and an optional IV/nonce for GCM.
+This package [includes an implementation](https://github.com/jedda/ecies/blob/main/ecies.go#L154) of the [X9.63-KDF](https://datatracker.ietf.org/doc/html/rfc8418#section-2.1) Key Derivation Function used by Apple's framework to derive shared AES keys and an optional IV/nonce for GCM.
 
 ### EC & AES Key Sizes
 
-This package follows the behaviour of Apple's when it comes to AES key size selection. For 256 bit EC keys, 16 bits of the derived key are used for AES, leading to AES-128 being used for the symmetric encryption. Where EC key sizes > 256 bits are used (384, 521), 32 bits of the derived key are used for AES, resulting in AES-256 symmetric encryption.
+This package follows Apple's behaviour when it comes to AES key size selection. For <=256 bit EC keys, 16 bits of the derived key are used for AES, leading to AES-128 being used for the symmetric encryption. Where EC key sizes >256 bits are used (384, 521), 32 bits of the derived key are used for AES, resulting in AES-256 symmetric encryption.
 
 ### Ciphertext Format
 
