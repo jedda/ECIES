@@ -1,5 +1,7 @@
 # ECIES
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/jedda/ecies.svg)](https://pkg.go.dev/github.com/jedda/ecies)
+
 This package and Go module implements the functions required to encrypt and decrypt data using the Elliptic Curve Integrated Encryption Scheme with X9.63 Key Derivation, and specifically; Apple's [implementation as part of Security.framework](https://developer.apple.com/documentation/security/1643957-seckeycreateencrypteddata) on iOS & macOS.
 
 It was conceived to simplify the process of exchanging secure encrypted data cross-platform between a Go application and Apple devices. It has been designed to be capable of exchanging encrypted data using keys [protected by the Secure Enclave on Apple platforms](https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/protecting_keys_with_the_secure_enclave) (with NIST P-256 elliptic curve keys) as well as other curves supported by ecdh.Curve (P-384, P-521, X25519).
