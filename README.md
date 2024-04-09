@@ -18,6 +18,10 @@ Ciphertext is outputted and expected in the following format (to match that outp
 
 ``[ephemeral public key (raw bytes)] + [message ciphertext] + [AES-GCM authentication tag]``
 
+### Example Usage
+
+Example code showing how to encrypt and decrypt is [available here](https://github.com/jedda/ecies-example).
+
 ### Companion Swift Playground
 
 A [companion Swift Playground project exists here](https://github.com/jedda/ecies-swift-playground) with instructions and examples of how to encrypt and decrypt data compatible with this package.
