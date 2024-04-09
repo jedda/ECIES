@@ -34,6 +34,8 @@ import (
 	"testing"
 )
 
+// v1.0.0
+
 // TestECDHFundamentals tests the fundamentals of ECDH to ensure that our shared keys can be determined
 // by generating new fixed and ephemeral key pairs and then ensuring that they calculate the same shared key.
 // This test should always pass; if it doesn't, something is extremely wrong.

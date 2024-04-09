@@ -34,6 +34,8 @@ import (
 	"math"
 )
 
+// v1.0.0
+
 // EncryptECIESX963AESGCM takes plaintext and parameters and encrypts it to ciphertext.
 // If successful, it returns ciphertext as a []byte string, or an error if it fails.
 func EncryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.PublicKey, plaintext []byte, additionalData []byte) ([]byte, error) {
