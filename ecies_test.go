@@ -34,7 +34,7 @@ import (
 	"testing"
 )
 
-// v1.0.0
+// v1.0.1
 
 // TestECDHFundamentals tests the fundamentals of ECDH to ensure that our shared keys can be determined
 // by generating new fixed and ephemeral key pairs and then ensuring that they calculate the same shared key.
@@ -49,8 +49,11 @@ func TestECDHFundamentals(t *testing.T) {
 	}
 }
 
-// TestExternalDecryptSuccess is a table driven test suite that tests a series of externally encrypted ciphertexts with known keys.
-// These ciphertexts have been created with SecKeyAlgorithms using Swift
+// TestExternalDecryptSuccess is a table driven test suite that tests a series of externally
+// encrypted ciphertexts with known keys. These ciphertexts have been created with SecKeyAlgorithms
+// using Swift on macOS using various key sizes. These don't currently provide full coverage of the
+// possible variations, but there is appropriate coverage of key sizes and hashing algorithms to test
+// multiple rounds of the KDF and decryption from AES-128 or AES-256.
 func TestExternalDecryptSuccess(t *testing.T) {
 	// set up our testing table
 	tests := map[string]struct {
@@ -66,6 +69,14 @@ func TestExternalDecryptSuccess(t *testing.T) {
 			ciphertext: "BPIMheQOrz0l9wEjcOHQEQ16D9Go8Sm8bEM3LAgMEHUf/eHy3u0oVlfh2po9ocPCuKG2bQ28wlsQ0N6SNJ3O3auS/QeoUogLVcJ3+R1OOeixEJyqeUkn6zB8LcqoZ+Y2",
 			hash:       sha256.New224(),
 			variableIV: false,
+		},
+		"P256-SHA224-VIV": {
+			// created with SecKeyAlgorithm .eciesEncryptionCofactorVariableIVX963SHA224AESGCM
+			// and P-256 (secp256r1) key (openssl ecparam -name secp256r1 -genkey -noout)
+			key:        "MHcCAQEEICc4dTt4v3ZjEQ7aJppfTHLNJKrQUH1pm6127OQsXfjeoAoGCCqGSM49AwEHoUQDQgAEv8iTB0Jx55bGTD/lTVkD8AUqBgMtHiHnO94/I/CGjUEja/TE3dx3aFCjONumJDsW5RPwCK5yTl85yS14/ZeP0g==",
+			ciphertext: "BOFS+T9khqnasOma28IAIkquBbdx0yWd71niMjA6Xh+hYRzLrdFEIvNar8oskIL6MbiszIptf4UgoYPnqf+9b/9sM/kljjogttA9lt9zIUJBnRByTg/NScAa5i/nOe96",
+			hash:       sha256.New224(),
+			variableIV: true,
 		},
 		"P256-SHA256-VIV": {
 			// created with SecKeyAlgorithm .eciesEncryptionCofactorVariableIVX963SHA256AESGCM
@@ -150,7 +161,6 @@ func TestExternalDecryptSuccess(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 // TestInternalEncryptDecryptSuccess is a table driven test suite that encrypts and decrypts variants of ECIES
@@ -311,5 +321,4 @@ func TestInternalEncryptDecryptSuccess(t *testing.T) {
 			}
 		})
 	}
-
 }

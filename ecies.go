@@ -34,10 +34,19 @@ import (
 	"math"
 )
 
-// v1.0.0
+// v1.0.1
 
-// EncryptECIESX963AESGCM takes plaintext and parameters and encrypts it to ciphertext.
-// If successful, it returns ciphertext as a []byte string, or an error if it fails.
+// EncryptECIESX963AESGCM takes a plaintext []byte slice along with the following parameters and encrypts it to ciphertext.
+// The returned ciphertext data can be decrypted by [SecKeyCreateDecryptedData()] on Apple platforms.
+//
+//   - algorithm is the underlying hashing algorithm used by the KDF
+//   - variableIV determines if additional bits from the KDF are used as a nonce/IV for AES-GCM
+//   - key is the [ecdh.PublicKey] used to perform ECDH and determine the shared key
+//   - additionalData is optional data used by AES-GCM to authenticate (it is not used in Apple's implementation)
+//
+// If successful, it returns ciphertext data as a []byte slice, or an error if it fails.
+//
+// [SecKeyCreateDecryptedData()]: https://developer.apple.com/documentation/security/1644043-seckeycreatedecrypteddata
 func EncryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.PublicKey, plaintext []byte, additionalData []byte) ([]byte, error) {
 	ivSize := 16
 	aesKeySize := 16
@@ -54,7 +63,7 @@ func EncryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.Publ
 		return nil, err
 	}
 	// perform an ECDH exchange to find our shared key
-	sharedKey, err := ephemeralPrivateKey.ECDH(key)
+	sharedKey, err := performECDH(ephemeralPrivateKey, key)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +96,17 @@ func EncryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.Publ
 	return append(ephemeralPrivateKey.PublicKey().Bytes(), ciphertext...), nil
 }
 
-// DecryptECIESX963AESGCM takes ciphertext and parameters and decrypts it back to plaintext.
-// If successful, it returns plaintext as a []byte string, or an error if it fails.
+// DecryptECIESX963AESGCM takes a ciphertext []byte slice along with the following parameters and decrypts it to plaintext.
+// The ciphertext data can be created by [SecKeyCreateEncryptedData()] on Apple platforms.
+//
+//   - algorithm is the underlying hashing algorithm used by the KDF
+//   - variableIV determines if additional bits from the KDF are used as a nonce/IV for AES-GCM
+//   - key is the [ecdh.PublicKey] used to perform ECDH and determine the shared key
+//   - additionalData is optional data used by AES-GCM to authenticate (it is not used in Apple's implementation)
+//
+// If successful, it returns plaintext data as a []byte slice, or an error if it fails.
+//
+// [SecKeyCreateEncryptedData()]: https://developer.apple.com/documentation/security/1643957-seckeycreateencrypteddata
 func DecryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.PrivateKey, ciphertext []byte, additionalData []byte) ([]byte, error) {
 	// check our EC key size
 	// if greater than 65 bytes, this is greater than P-256 and thus uses AES-256 in Apple's implementation
@@ -106,13 +124,13 @@ func DecryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.Priv
 	}
 
 	// get our ephemeral public key from the first [ecKeyLength] bytes of the ciphertext
-	ephemeralKey, err := GetEphemeralPublicKey(key.Curve(), ciphertext[:ecKeyLength])
+	ephemeralKey, err := getEphemeralPublicKey(key.Curve(), ciphertext[:ecKeyLength])
 	if err != nil {
 		return nil, err
 	}
 
 	// perform an ECDH exchange to find our shared key
-	sharedKey, err := PerformECDH(key, ephemeralKey)
+	sharedKey, err := performECDH(key, ephemeralKey)
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +168,12 @@ func DecryptECIESX963AESGCM(algorithm hash.Hash, variableIV bool, key *ecdh.Priv
 	return plaintext, nil
 }
 
-// DeriveX963KDF derives a key using the ANSI-X9.63-KDF key derivation function outlined here:
+// DeriveX963KDF derives a key using the ANSI-X9.63-KDF
+// key derivation function outlined in [RFC 8418 2.1].
+// It returns a byte slice of chosen length, performing
+// multiple rounds of the chosen hashing algorithm if required.
+//
 // [RFC 8418 2.1]: https://datatracker.ietf.org/doc/html/rfc8418#section-2.1
-// It returns a byte slice of chosen length, performing multiple rounds of the chosen hashing algorithm if required.
 func DeriveX963KDF(algorithm hash.Hash, length int, key []byte, shared []byte) ([]byte, error) {
 	// setup our output and counter variables
 	var output []byte
@@ -182,9 +203,10 @@ func DeriveX963KDF(algorithm hash.Hash, length int, key []byte, shared []byte) (
 	return output[:length], nil
 }
 
-// PerformECDH is a simple wrapper function that simply performs a ECDH exchange with a
-// provided private and public key.
-func PerformECDH(privateKey *ecdh.PrivateKey, publicKey *ecdh.PublicKey) ([]byte, error) {
+// performECDH is a simple wrapper function that performs
+// a ECDH exchange with a provided private and public keys
+// and returns the shared key as a data slice.
+func performECDH(privateKey *ecdh.PrivateKey, publicKey *ecdh.PublicKey) ([]byte, error) {
 	sharedKey, err := privateKey.ECDH(publicKey)
 	if err != nil {
 		return nil, err
@@ -192,10 +214,10 @@ func PerformECDH(privateKey *ecdh.PrivateKey, publicKey *ecdh.PublicKey) ([]byte
 	return sharedKey, nil
 }
 
-// GetEphemeralPublicKey returns a ecdh.PublicKey, either from the supplied raw bytes or freshly
-// generated on the supplied curve.
-func GetEphemeralPublicKey(curve ecdh.Curve, key []byte) (*ecdh.PublicKey, error) {
-	// if key has been supplied, construct a
+// getEphemeralPublicKey creates and returns a [ecdh.PublicKey],
+// either from supplied raw bytes or freshly generated on the supplied curve.
+func getEphemeralPublicKey(curve ecdh.Curve, key []byte) (*ecdh.PublicKey, error) {
+	// if key has been supplied, construct it and return
 	if key != nil {
 		// create a new public key
 		ephemeralKey, err := curve.NewPublicKey(key)
@@ -204,7 +226,7 @@ func GetEphemeralPublicKey(curve ecdh.Curve, key []byte) (*ecdh.PublicKey, error
 		}
 		return ephemeralKey, nil
 	} else {
-		// generate an ephemeral private key of the same curve type as our
+		// generate an ephemeral private key of the same curve type
 		ephemeralPrivateKey, err := curve.GenerateKey(rand.Reader)
 		if err != nil {
 			return nil, err
